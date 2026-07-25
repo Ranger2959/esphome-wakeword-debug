@@ -11,6 +11,18 @@ permissions:
   packages: write
 
 jobs:
+  addon-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint Home Assistant add-on
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: ./ingest_service
+
   test:
     runs-on: ubuntu-latest
     

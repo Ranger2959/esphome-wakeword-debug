@@ -14,6 +14,7 @@ from fastapi import (
     WebSocketDisconnect,
     HTTPException,
     Path as FastAPIPath,
+    Query,
 )
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -54,6 +55,11 @@ CLIP_LABELS = {
     clip_db.LABEL_BACKGROUND_NOISE,
     clip_db.LABEL_UNKNOWN,
 }
+
+# Clip listing pagination: the review UI renders an <audio> element per clip, so
+# keep pages small enough that the browser is not asked to load hundreds at once.
+DEFAULT_CLIP_PAGE_SIZE = 9
+MAX_CLIP_PAGE_SIZE = 100
 
 # Serve the review UI
 if STATIC_DIR.exists():
@@ -118,6 +124,22 @@ def get_mqtt_subscriber() -> MQTTSubscriber:
     if mqtt_subscriber is None:
         mqtt_subscriber = MQTTSubscriber()
     return mqtt_subscriber
+
+
+def publish_wake_event(wav_path: str, metadata: dict) -> bool:
+    """
+    Publish a wake event to MQTT, unless MQTT is disabled.
+
+    When MQTT is disabled the publisher is never constructed, so no connection
+    is attempted. This keeps UDP-only deployments (such as the Home Assistant
+    add-on without a broker) from stalling on a broker connect per wake event.
+
+    Returns:
+        True if the event was published, False otherwise
+    """
+    if not settings.MQTT_ENABLED:
+        return False
+    return get_mqtt_publisher().publish_wake_event(wav_path, metadata)
 
 
 def get_udp_receiver() -> UDPAudioReceiver:
@@ -281,7 +303,6 @@ async def handle_wake_event(assistant_id: str, metadata: dict) -> None:
     try:
         buffer = get_audio_buffer()
         writer = get_wav_writer()
-        mqtt = get_mqtt_publisher()
 
         # Use default durations for wake event
         pre_duration = settings.PRE_WAKE_DURATION_SECONDS
@@ -347,7 +368,7 @@ async def handle_wake_event(assistant_id: str, metadata: dict) -> None:
         )
 
         # Publish MQTT event
-        mqtt.publish_wake_event(wav_path, clip_metadata)
+        publish_wake_event(wav_path, clip_metadata)
 
         logger.info(f"Wake event processed for assistant {assistant_id}: {wav_path}")
 
@@ -378,46 +399,49 @@ async def startup_event():
     clip_db.init_db(CLIP_DB_PATH)
     _sync_clips_from_disk()
 
-    # Connect to MQTT broker (publisher)
-    mqtt = get_mqtt_publisher()
-    if mqtt.connect():
-        logger.info("MQTT publisher connection established")
+    if settings.MQTT_ENABLED:
+        # Connect to MQTT broker (publisher)
+        mqtt = get_mqtt_publisher()
+        if mqtt.connect():
+            logger.info("MQTT publisher connection established")
+        else:
+            logger.warning("Failed to connect MQTT publisher to broker")
+
+        # Connect to MQTT broker (subscriber)
+        subscriber = get_mqtt_subscriber()
+
+        # Set up callbacks with thread-safe asyncio wrappers
+        def audio_callback(assistant_id: str, data: bytes):
+            """Thread-safe wrapper for async audio handler."""
+            if main_event_loop and not main_event_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    handle_audio_data(assistant_id, data), main_event_loop
+                )
+
+        def audio_info_callback(assistant_id: str, audio_info: dict):
+            """Thread-safe wrapper for async audio info handler."""
+            if main_event_loop and not main_event_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    handle_audio_info(assistant_id, audio_info), main_event_loop
+                )
+
+        def wake_callback(assistant_id: str, metadata: dict):
+            """Thread-safe wrapper for async wake handler."""
+            if main_event_loop and not main_event_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    handle_wake_event(assistant_id, metadata), main_event_loop
+                )
+
+        subscriber.set_audio_callback(audio_callback)
+        subscriber.set_audio_info_callback(audio_info_callback)
+        subscriber.set_wake_callback(wake_callback)
+
+        if subscriber.connect():
+            logger.info("MQTT subscriber connection established")
+        else:
+            logger.warning("Failed to connect MQTT subscriber to broker")
     else:
-        logger.warning("Failed to connect MQTT publisher to broker")
-
-    # Connect to MQTT broker (subscriber)
-    subscriber = get_mqtt_subscriber()
-
-    # Set up callbacks with thread-safe asyncio wrappers
-    def audio_callback(assistant_id: str, data: bytes):
-        """Thread-safe wrapper for async audio handler."""
-        if main_event_loop and not main_event_loop.is_closed():
-            asyncio.run_coroutine_threadsafe(
-                handle_audio_data(assistant_id, data), main_event_loop
-            )
-
-    def audio_info_callback(assistant_id: str, audio_info: dict):
-        """Thread-safe wrapper for async audio info handler."""
-        if main_event_loop and not main_event_loop.is_closed():
-            asyncio.run_coroutine_threadsafe(
-                handle_audio_info(assistant_id, audio_info), main_event_loop
-            )
-
-    def wake_callback(assistant_id: str, metadata: dict):
-        """Thread-safe wrapper for async wake handler."""
-        if main_event_loop and not main_event_loop.is_closed():
-            asyncio.run_coroutine_threadsafe(
-                handle_wake_event(assistant_id, metadata), main_event_loop
-            )
-
-    subscriber.set_audio_callback(audio_callback)
-    subscriber.set_audio_info_callback(audio_info_callback)
-    subscriber.set_wake_callback(wake_callback)
-
-    if subscriber.connect():
-        logger.info("MQTT subscriber connection established")
-    else:
-        logger.warning("Failed to connect MQTT subscriber to broker")
+        logger.info("MQTT integration disabled")
 
     # Start UDP audio receiver (raw PCM stream from satellite1 wake_audio_stream)
     if settings.UDP_ENABLED:
@@ -447,11 +471,11 @@ async def shutdown_event():
     """Cleanup on shutdown."""
     logger.info("Shutting down Wake Word Audio Ingest Service...")
 
-    mqtt = get_mqtt_publisher()
-    mqtt.disconnect()
+    if mqtt_publisher is not None:
+        mqtt_publisher.disconnect()
 
-    subscriber = get_mqtt_subscriber()
-    subscriber.disconnect()
+    if mqtt_subscriber is not None:
+        mqtt_subscriber.disconnect()
 
     if udp_receiver is not None:
         udp_receiver.stop()
@@ -475,12 +499,15 @@ async def root():
 async def health():
     """Health check endpoint."""
     buffer = get_audio_buffer()
-    mqtt = get_mqtt_publisher()
-    subscriber = get_mqtt_subscriber()
+    # Report on the existing clients only; probing must not create them.
     return {
         "status": "healthy",
-        "mqtt_publisher_connected": mqtt.connected,
-        "mqtt_subscriber_connected": subscriber.connected,
+        "mqtt_publisher_connected": (
+            mqtt_publisher.connected if mqtt_publisher is not None else False
+        ),
+        "mqtt_subscriber_connected": (
+            mqtt_subscriber.connected if mqtt_subscriber is not None else False
+        ),
         "udp_receiver_running": udp_receiver.running if udp_receiver else False,
         "buffer_samples": buffer.get_buffer_size(),
         "buffer_duration_seconds": buffer.get_duration(),
@@ -524,7 +551,6 @@ async def trigger_wake_event(
     try:
         buffer = get_audio_buffer()
         writer = get_wav_writer()
-        mqtt = get_mqtt_publisher()
 
         # Wait for POST_WAKE_DURATION_SECONDS to capture audio after wake event
         logger.info(
@@ -585,7 +611,7 @@ async def trigger_wake_event(
         )
 
         # Publish MQTT event
-        mqtt_published = mqtt.publish_wake_event(wav_path, metadata)
+        mqtt_published = publish_wake_event(wav_path, metadata)
 
         logger.info(f"Wake event processed for assistant {assistant_id}: {wav_path}")
 
@@ -786,20 +812,39 @@ async def list_clips(
     end: Optional[str] = None,
     label: Optional[str] = None,
     include_deleted: bool = False,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(
+        DEFAULT_CLIP_PAGE_SIZE, ge=1, le=MAX_CLIP_PAGE_SIZE
+    ),
 ):
-    """List audio clips with optional datetime and label filtering."""
+    """List a page of audio clips with optional datetime and label filtering."""
     start_dt = _parse_datetime(start) if start else None
     end_dt = _parse_datetime(end) if end else None
 
     start_iso = start_dt.isoformat().replace("+00:00", "Z") if start_dt else None
     end_iso = end_dt.isoformat().replace("+00:00", "Z") if end_dt else None
 
+    filters = {
+        "start": start_iso,
+        "end": end_iso,
+        "label": label,
+        "include_deleted": include_deleted,
+    }
+
+    total = clip_db.count_clips(CLIP_DB_PATH, **filters)
+    unlabeled_total = clip_db.count_clips(
+        CLIP_DB_PATH, unlabeled_only=True, **filters
+    )
+    total_pages = max(1, -(-total // page_size))  # ceil division
+    # Clamp requests past the end so deleting the last clip on a page does not
+    # leave the UI stranded on an empty view.
+    current_page = min(page, total_pages)
+
     rows = clip_db.list_clips(
         CLIP_DB_PATH,
-        start=start_iso,
-        end=end_iso,
-        label=label,
-        include_deleted=include_deleted,
+        limit=page_size,
+        offset=(current_page - 1) * page_size,
+        **filters,
     )
     clips = []
     for row in rows:
@@ -817,7 +862,14 @@ async def list_clips(
             }
         )
 
-    return {"clips": clips}
+    return {
+        "clips": clips,
+        "page": current_page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": total_pages,
+        "unlabeled_total": unlabeled_total,
+    }
 
 
 @app.get("/api/clips/{clip_id}/audio")

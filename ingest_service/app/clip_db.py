@@ -78,15 +78,15 @@ def insert_clip(
         return int(row["id"])
 
 
-def list_clips(
-    db_path: Path,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
-    label: Optional[str] = None,
-    include_deleted: bool = False,
-) -> Iterable[sqlite3.Row]:
+def _filter_sql(
+    start: Optional[str],
+    end: Optional[str],
+    label: Optional[str],
+    include_deleted: bool,
+) -> tuple[str, list]:
+    """Build the shared WHERE clause used by listing and counting."""
     clauses = []
-    params = []
+    params: list = []
     if start:
         clauses.append("timestamp >= ?")
         params.append(start)
@@ -100,11 +100,55 @@ def list_clips(
         clauses.append("deleted = 0")
 
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-    query = f"SELECT * FROM clips {where} ORDER BY timestamp DESC"
+    return where, params
+
+
+def list_clips(
+    db_path: Path,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    label: Optional[str] = None,
+    include_deleted: bool = False,
+    limit: Optional[int] = None,
+    offset: int = 0,
+) -> Iterable[sqlite3.Row]:
+    where, params = _filter_sql(start, end, label, include_deleted)
+    query = f"SELECT * FROM clips {where} ORDER BY timestamp DESC, id DESC"
+
+    if limit is not None:
+        query += " LIMIT ? OFFSET ?"
+        params.extend([limit, max(0, offset)])
+    elif offset > 0:
+        # SQLite requires a LIMIT before OFFSET; -1 means "no limit".
+        query += " LIMIT -1 OFFSET ?"
+        params.append(offset)
 
     with _connect(db_path) as conn:
         _ensure_schema(conn)
         return conn.execute(query, params).fetchall()
+
+
+def count_clips(
+    db_path: Path,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    label: Optional[str] = None,
+    include_deleted: bool = False,
+    unlabeled_only: bool = False,
+) -> int:
+    """Count clips matching the filters, ignoring pagination."""
+    where, params = _filter_sql(start, end, label, include_deleted)
+    if unlabeled_only:
+        clause = "(label IS NULL OR label = '' OR label = ?)"
+        where = f"{where} AND {clause}" if where else f"WHERE {clause}"
+        params.append(LABEL_UNKNOWN)
+
+    with _connect(db_path) as conn:
+        _ensure_schema(conn)
+        row = conn.execute(
+            f"SELECT COUNT(*) AS total FROM clips {where}", params
+        ).fetchone()
+        return int(row["total"])
 
 
 def get_clip(db_path: Path, clip_id: int) -> Optional[sqlite3.Row]:

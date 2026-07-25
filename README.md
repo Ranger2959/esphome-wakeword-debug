@@ -62,6 +62,17 @@ A comprehensive audio capture and processing pipeline for wake word debugging, c
 
 ## Quick Start
 
+### Home Assistant Add-on
+
+Home Assistant OS and Supervised users can install this repository as an add-on repository:
+
+1. Open **Settings > Add-ons > Add-on Store**.
+2. Open **Repositories** and add `https://github.com/constructorfleet/esphome-wakeword-debug`.
+3. Install **Wake Word Debug Pipeline** and start it.
+4. Point ESPHome UDP audio at the Home Assistant host on port `6056`.
+
+The add-on persists clips and labels in its backup-enabled data directory, uses Home Assistant's Mosquitto service automatically when available, and exposes the review UI through Ingress. See [`ingest_service/DOCS.md`](ingest_service/DOCS.md) for configuration.
+
 ### Prerequisites
 - ESP32 development board
 - I2S MEMS microphone (e.g., INMP441, SPH0645)
@@ -330,6 +341,9 @@ Example wiring for INMP441 (as shown in example-config.yaml):
   - Query params: `assistant_id` (optional - clears specific assistant or all if omitted)
 - `POST /cleanup` - Cleanup old WAV files
   - Query params: `max_age_days`
+- `GET /api/clips` - List a page of captured clips, newest first
+  - Query params: `start`, `end`, `label`, `include_deleted`, `page` (default: 1), `page_size` (default: 9, max: 100)
+  - Returns `clips` plus `page`, `page_size`, `total`, `total_pages`, and `unlabeled_total`, where the totals cover the whole filtered set rather than the current page. A `page` past the end clamps to the last populated page.
 
 ### Multi-Assistant Support
 

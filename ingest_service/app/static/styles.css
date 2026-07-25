@@ -374,6 +374,27 @@ button:disabled {
   transform: none;
 }
 
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--outline);
+  background: rgba(20, 24, 38, 0.7);
+}
+
+.page-status {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 130px;
+  text-align: center;
+}
+
 .empty-state {
   display: flex;
   justify-content: center;

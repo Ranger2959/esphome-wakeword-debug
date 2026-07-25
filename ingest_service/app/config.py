@@ -36,6 +36,7 @@ class Settings:
     UDP_ASSISTANT_ID: str = os.getenv("UDP_ASSISTANT_ID", "")
 
     # MQTT settings
+    MQTT_ENABLED: bool = os.getenv("MQTT_ENABLED", "true").lower() in ("1", "true", "yes")
     MQTT_BROKER: str = os.getenv("MQTT_BROKER", "localhost")
     MQTT_PORT: int = int(os.getenv("MQTT_PORT", "1883"))
     MQTT_USERNAME: Optional[str] = os.getenv("MQTT_USERNAME")

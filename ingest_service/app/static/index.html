@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wakeword Clip Review</title>
-    <link rel="stylesheet" href="/ui/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="page">
@@ -16,7 +16,7 @@
         </div>
         <div class="stats">
           <div class="stat">
-            <span class="stat-label">Loaded</span>
+            <span class="stat-label">Total</span>
             <span class="stat-value" id="clip-count">0</span>
           </div>
           <div class="stat">
@@ -48,6 +48,15 @@
             <option value="False Positive">False Positive</option>
             <option value="False Negative">False Negative</option>
             <option value="Background Noise">Background Noise</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="page-size">Per Page</label>
+          <select id="page-size">
+            <option value="9" selected>9</option>
+            <option value="18">18</option>
+            <option value="36">36</option>
+            <option value="100">100</option>
           </select>
         </div>
         <div class="field checkbox-field">
@@ -100,9 +109,16 @@
           </div>
         </div>
         <div id="list" class="clip-grid"></div>
+        <nav id="pager" class="pager hidden" aria-label="Clip pages">
+          <button id="page-first" class="ghost" aria-label="First page">« First</button>
+          <button id="page-prev" class="ghost" aria-label="Previous page">‹ Prev</button>
+          <span id="page-status" class="page-status" aria-live="polite">Page 1 of 1</span>
+          <button id="page-next" class="ghost" aria-label="Next page">Next ›</button>
+          <button id="page-last" class="ghost" aria-label="Last page">Last »</button>
+        </nav>
       </main>
     </div>
 
-    <script type="module" src="/ui/app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

@@ -12,6 +12,11 @@ type Clip = {
 
 type ClipResponse = {
   clips: Clip[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  unlabeled_total: number;
 };
 
 const listEl = document.getElementById("list") as HTMLDivElement;
@@ -29,6 +34,22 @@ const clearBtn = document.getElementById("clear") as HTMLButtonElement;
 const downloadBtn = document.getElementById("download") as HTMLButtonElement;
 const refreshBtn = document.getElementById("refresh") as HTMLButtonElement;
 const captureNoiseBtn = document.getElementById("capture-noise") as HTMLButtonElement;
+
+// Pagination elements
+const pageSizeSelect = document.getElementById("page-size") as HTMLSelectElement;
+const pagerEl = document.getElementById("pager") as HTMLElement;
+const pageStatusEl = document.getElementById("page-status") as HTMLSpanElement;
+const pageFirstBtn = document.getElementById("page-first") as HTMLButtonElement;
+const pagePrevBtn = document.getElementById("page-prev") as HTMLButtonElement;
+const pageNextBtn = document.getElementById("page-next") as HTMLButtonElement;
+const pageLastBtn = document.getElementById("page-last") as HTMLButtonElement;
+
+let currentPage = 1;
+let totalPages = 1;
+
+// Resolve backend routes relative to /ui/ so direct access and HA Ingress both work.
+const appUrl = (path: string): string =>
+  new URL(`../${path.replace(/^\/+/, "")}`, window.location.href).toString();
 
 // Dialog elements
 const noiseDialog = document.getElementById("noise-dialog") as HTMLDivElement;
@@ -89,13 +110,26 @@ const buildQuery = () => {
   return query ? `?${query}` : "";
 };
 
-const render = (clips: Clip[]) => {
-  listEl.innerHTML = "";
-  countEl.textContent = clips.length.toString();
+const renderPager = () => {
+  pageStatusEl.textContent = `Page ${currentPage} of ${totalPages}`;
+  const atFirst = currentPage <= 1;
+  const atLast = currentPage >= totalPages;
+  pageFirstBtn.disabled = atFirst;
+  pagePrevBtn.disabled = atFirst;
+  pageNextBtn.disabled = atLast;
+  pageLastBtn.disabled = atLast;
+  pagerEl.classList.toggle("hidden", totalPages <= 1);
+};
 
-  // Count unlabeled clips
-  const unlabeledCount = clips.filter(isUnlabeled).length;
-  unlabeledCountEl.textContent = unlabeledCount.toString();
+const render = (data: ClipResponse) => {
+  const clips = data.clips;
+  listEl.innerHTML = "";
+  countEl.textContent = data.total.toString();
+  unlabeledCountEl.textContent = data.unlabeled_total.toString();
+
+  currentPage = data.page;
+  totalPages = data.total_pages;
+  renderPager();
 
   if (clips.length === 0) {
     emptyEl.classList.remove("hidden");
@@ -165,7 +199,9 @@ const render = (clips: Clip[]) => {
 
     const audio = document.createElement("audio");
     audio.controls = true;
-    audio.src = clip.audio_url;
+    // Duration comes from the database, so defer the WAV fetch until playback.
+    audio.preload = "none";
+    audio.src = appUrl(clip.audio_url);
 
     const actions = document.createElement("div");
     actions.className = "actions";
@@ -203,7 +239,7 @@ const render = (clips: Clip[]) => {
     ) => {
       lockButtons(true);
       try {
-        const response = await fetch(`/api/clips/${clip.id}/label`, {
+        const response = await fetch(appUrl(`/api/clips/${clip.id}/label`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ label }),
@@ -241,7 +277,7 @@ const render = (clips: Clip[]) => {
       lockButtons(true);
       try {
         const endpoint = clip.deleted ? "undelete" : "delete";
-        const response = await fetch(`/api/clips/${clip.id}/${endpoint}`, {
+        const response = await fetch(appUrl(`/api/clips/${clip.id}/${endpoint}`), {
           method: "POST",
         });
         if (!response.ok) {
@@ -276,30 +312,62 @@ const render = (clips: Clip[]) => {
   }
 };
 
+const emptyResponse = (): ClipResponse => ({
+  clips: [],
+  page: 1,
+  page_size: parseInt(pageSizeSelect.value, 10),
+  total: 0,
+  total_pages: 1,
+  unlabeled_total: 0,
+});
+
 const load = async () => {
   setRangeLabel();
-  const response = await fetch(`/api/clips${buildQuery()}`);
+  const params = new URLSearchParams(buildQuery().replace(/^\?/, ""));
+  params.set("page", currentPage.toString());
+  params.set("page_size", pageSizeSelect.value);
+  const response = await fetch(appUrl(`/api/clips?${params.toString()}`));
   if (!response.ok) {
-    render([]);
+    render(emptyResponse());
     return;
   }
   const data = (await response.json()) as ClipResponse;
-  render(data.clips);
+  render(data);
 };
 
-applyBtn.addEventListener("click", () => {
+// Filter changes invalidate the current offset, so restart from page one.
+const loadFirstPage = () => {
+  currentPage = 1;
   load();
+};
+
+const goToPage = (page: number) => {
+  const target = Math.min(Math.max(1, page), totalPages);
+  if (target === currentPage) return;
+  currentPage = target;
+  load();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+pageFirstBtn.addEventListener("click", () => goToPage(1));
+pagePrevBtn.addEventListener("click", () => goToPage(currentPage - 1));
+pageNextBtn.addEventListener("click", () => goToPage(currentPage + 1));
+pageLastBtn.addEventListener("click", () => goToPage(totalPages));
+pageSizeSelect.addEventListener("change", loadFirstPage);
+
+applyBtn.addEventListener("click", () => {
+  loadFirstPage();
 });
 
 clearBtn.addEventListener("click", () => {
   startInput.value = "";
   endInput.value = "";
-  load();
+  loadFirstPage();
 });
 
 downloadBtn.addEventListener("click", () => {
   const query = buildQuery();
-  window.location.href = `/api/clips/download${query}`;
+  window.location.href = appUrl(`/api/clips/download${query}`);
 });
 
 refreshBtn.addEventListener("click", () => {
@@ -310,7 +378,7 @@ refreshBtn.addEventListener("click", () => {
 const openNoiseDialog = async () => {
   // Fetch active assistants and populate dropdown
   try {
-    const response = await fetch("/api/assistants");
+    const response = await fetch(appUrl("/api/assistants"));
     if (response.ok) {
       const data = await response.json();
       const assistants = data.assistants || ["default"];
@@ -354,7 +422,7 @@ const captureBackgroundNoise = async () => {
   dialogConfirm.disabled = true;
 
   try {
-    const response = await fetch("/api/capture_background_noise", {
+    const response = await fetch(appUrl("/api/capture_background_noise"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ seconds, assistant_id: assistantId }),

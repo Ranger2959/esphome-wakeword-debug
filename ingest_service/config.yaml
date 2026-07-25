@@ -1,0 +1,57 @@
+name: Wake Word Debug Pipeline
+version: "1.0.0"
+slug: wakeword_debug
+description: Capture, review, and label wake word audio from ESPHome devices
+url: https://github.com/constructorfleet/esphome-wakeword-debug
+arch:
+  - aarch64
+  - amd64
+init: false
+backup: cold
+ports:
+  8000/tcp: 8000
+  6056/udp: 6056
+ports_description:
+  8000/tcp: Web UI and REST API
+  6056/udp: ESPHome UDP audio stream
+ingress: true
+ingress_port: 8000
+ingress_entry: /ui/
+panel_icon: mdi:waveform
+panel_title: Wake Word Debug
+services:
+  - mqtt:want
+options:
+  buffer_duration_seconds: 60
+  pre_wake_duration_seconds: 2.0
+  post_wake_duration_seconds: 3.0
+  udp_enabled: true
+  udp_assistant_id: ""
+  udp_sample_rate: 16000
+  udp_sample_width: 2
+  udp_channels: 1
+  mqtt_broker: ""
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  mqtt_topic_prefix: wakeword/debug
+  mqtt_audio_topic: assist/debug/+/pcm
+  mqtt_event_topic: assist/debug/+/events
+  mqtt_audio_info_topic: assist/debug/+/audio_info
+schema:
+  buffer_duration_seconds: int(10,300)
+  pre_wake_duration_seconds: float(0.5,10)
+  post_wake_duration_seconds: float(0.5,30)
+  udp_enabled: bool
+  udp_assistant_id: str?
+  udp_sample_rate: int(8000,48000)
+  udp_sample_width: int(1,4)
+  udp_channels: int(1,8)
+  mqtt_broker: str?
+  mqtt_port: port
+  mqtt_username: str?
+  mqtt_password: password?
+  mqtt_topic_prefix: str
+  mqtt_audio_topic: str
+  mqtt_event_topic: str
+  mqtt_audio_info_topic: str
