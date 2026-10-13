@@ -28,7 +28,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-      - SAMPLE_RATE=48000
+      - SAMPLE_RATE=16000
       - SAMPLE_WIDTH=4
       - CHANNELS=1
       # WWD2 packets are self-describing; these audio format values are legacy fallbacks.

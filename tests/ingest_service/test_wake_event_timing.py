@@ -47,7 +47,7 @@ class TestWakeEventTiming:
         mock_buffer_instance = Mock()
         mock_buffer_instance.get_clip = AsyncMock(return_value=mock_clip)
         mock_buffer_instance.get_audio_config = Mock(return_value={
-            "sample_rate": 48000,
+            "sample_rate": 16000,
             "sample_width": 4,
             "channels": 1
         })
@@ -101,7 +101,7 @@ class TestWakeEventTiming:
         
         mock_buffer_instance.get_clip = track_get_clip
         mock_buffer_instance.get_audio_config = Mock(return_value={
-            "sample_rate": 48000,
+            "sample_rate": 16000,
             "sample_width": 4,
             "channels": 1
         })
@@ -146,7 +146,7 @@ class TestWakeEventTiming:
         mock_buffer_instance = Mock()
         mock_buffer_instance.get_clip = AsyncMock(return_value=mock_clip)
         mock_buffer_instance.get_audio_config = Mock(return_value={
-            "sample_rate": 48000,
+            "sample_rate": 16000,
             "sample_width": 4,
             "channels": 1
         })

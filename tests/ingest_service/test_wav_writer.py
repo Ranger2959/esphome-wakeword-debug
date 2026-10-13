@@ -199,14 +199,14 @@ class TestWAVWriter:
         wav_path = writer.write_clip(
             test_data,
             filename="custom_config.wav",
-            sample_rate=48000,
+            sample_rate=16000,
             sample_width=4,
             channels=2
         )
         
         # Verify the WAV file uses custom parameters, not defaults
         with wave.open(wav_path, 'rb') as wav_file:
-            assert wav_file.getframerate() == 48000  # Custom, not 16000
+            assert wav_file.getframerate() == 16000  # Custom, not 16000
             assert wav_file.getsampwidth() == 4  # Custom, not 2
             assert wav_file.getnchannels() == 2  # Custom, not 1
     

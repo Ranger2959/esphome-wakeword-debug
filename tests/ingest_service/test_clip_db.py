@@ -32,7 +32,7 @@ def test_insert_clip(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test_assistant",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_UNKNOWN,
     )
     
@@ -56,7 +56,7 @@ def test_new_labels(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_FALSE_NEGATIVE,
     )
     
@@ -70,7 +70,7 @@ def test_new_labels(temp_db_path):
         timestamp="2024-01-01T00:01:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_BACKGROUND_NOISE,
     )
     
@@ -88,7 +88,7 @@ def test_update_label(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_UNKNOWN,
     )
     
@@ -117,7 +117,7 @@ def test_soft_delete(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     
     # Verify clip is not deleted
@@ -143,7 +143,7 @@ def test_undelete(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     
     # Soft delete the clip
@@ -169,7 +169,7 @@ def test_list_clips_exclude_deleted(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     
     # Insert and delete another clip
@@ -179,7 +179,7 @@ def test_list_clips_exclude_deleted(temp_db_path):
         timestamp="2024-01-01T00:01:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     clip_db.soft_delete_clip(temp_db_path, clip_id2)
     
@@ -200,7 +200,7 @@ def test_list_clips_include_deleted(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     
     # Insert and delete another clip
@@ -210,7 +210,7 @@ def test_list_clips_include_deleted(temp_db_path):
         timestamp="2024-01-01T00:01:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     clip_db.soft_delete_clip(temp_db_path, clip_id2)
     
@@ -232,7 +232,7 @@ def test_list_clips_filter_by_label(temp_db_path):
         timestamp="2024-01-01T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_POSITIVE,
     )
     
@@ -242,7 +242,7 @@ def test_list_clips_filter_by_label(temp_db_path):
         timestamp="2024-01-01T00:01:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_FALSE_NEGATIVE,
     )
     
@@ -252,7 +252,7 @@ def test_list_clips_filter_by_label(temp_db_path):
         timestamp="2024-01-01T00:02:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_BACKGROUND_NOISE,
     )
     
@@ -278,7 +278,7 @@ def _insert_numbered_clips(db_path, count, label=clip_db.LABEL_UNKNOWN):
                 timestamp=f"2024-01-01T00:{index:02d}:00Z",
                 assistant_id="test",
                 duration=5.0,
-                sample_rate=48000,
+                sample_rate=16000,
                 label=label,
             )
         )
@@ -349,7 +349,7 @@ def test_count_clips_respects_filters(temp_db_path):
         timestamp="2024-01-02T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_POSITIVE,
     )
     deleted_id = clip_db.insert_clip(
@@ -358,7 +358,7 @@ def test_count_clips_respects_filters(temp_db_path):
         timestamp="2024-01-03T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
     )
     clip_db.soft_delete_clip(temp_db_path, deleted_id)
 
@@ -380,7 +380,7 @@ def test_count_clips_unlabeled_only(temp_db_path):
         timestamp="2024-01-02T00:00:00Z",
         assistant_id="test",
         duration=5.0,
-        sample_rate=48000,
+        sample_rate=16000,
         label=clip_db.LABEL_POSITIVE,
     )
 

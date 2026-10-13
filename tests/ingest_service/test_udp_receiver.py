@@ -121,7 +121,7 @@ class TestUDPAudioReceiver:
                 encode_udp_audio_packet(
                     "kitchen",
                     pcm,
-                    sample_rate=48000,
+                    sample_rate=16000,
                     bits_per_sample=32,
                     channels=2,
                     sequence=42,
@@ -135,7 +135,7 @@ class TestUDPAudioReceiver:
 
         assert received[0][:2] == ("kitchen", pcm)
         metadata = received[0][2]
-        assert metadata.sample_rate == 48000
+        assert metadata.sample_rate == 16000
         assert metadata.bits_per_sample == 32
         assert metadata.channels == 2
         assert metadata.encoding == UDP_AUDIO_ENCODING_PCM_SIGNED_LE
@@ -264,7 +264,7 @@ class TestHandleUDPAudioData:
         main_module.audio_buffer = None
         main_module.udp_configured_assistants = set()
         metadata = UDPAudioPacketMetadata(
-            sample_rate=48000,
+            sample_rate=16000,
             bits_per_sample=32,
             channels=2,
             encoding=UDP_AUDIO_ENCODING_PCM_SIGNED_LE,
@@ -274,6 +274,6 @@ class TestHandleUDPAudioData:
         await main_module.handle_udp_audio_data("kitchen", b"\x00" * 16, metadata)
 
         config = main_module.get_audio_buffer().get_audio_config("kitchen")
-        assert config["sample_rate"] == 48000
+        assert config["sample_rate"] == 16000
         assert config["sample_width"] == 4
         assert config["channels"] == 2

@@ -145,7 +145,7 @@ The ingest service supports multiple assistants simultaneously:
 ### Key Audio Configuration
 
 Must match between ESPHome device and ingest service:
-- Sample rate: 48000 Hz (configurable)
+- Sample rate: 16000 Hz (configurable)
 - Sample width: 4 bytes (32-bit PCM)
 - Channels: 1 (mono)
 

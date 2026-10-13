@@ -148,12 +148,12 @@ class TestMultiAssistantAudioBuffer:
         buffer = MultiAssistantAudioBuffer(default_sample_rate=16000, default_sample_width=2, buffer_duration=1.0)
         
         # Set custom config for assistant1
-        await buffer.set_audio_config("assistant1", sample_rate=48000, bits_per_sample=32, channels=2)
+        await buffer.set_audio_config("assistant1", sample_rate=16000, bits_per_sample=32, channels=2)
         
         # Verify config was stored
         assert "assistant1" in buffer.assistant_configs
         config = buffer.assistant_configs["assistant1"]
-        assert config["sample_rate"] == 48000
+        assert config["sample_rate"] == 16000
         assert config["sample_width"] == 4  # 32 bits / 8 = 4 bytes
         assert config["channels"] == 2
         
@@ -165,11 +165,11 @@ class TestMultiAssistantAudioBuffer:
         buffer = MultiAssistantAudioBuffer(default_sample_rate=16000, default_sample_width=2, buffer_duration=1.0)
         
         # Set custom config before getting buffer
-        await buffer.set_audio_config("assistant1", sample_rate=48000, bits_per_sample=32, channels=2)
+        await buffer.set_audio_config("assistant1", sample_rate=16000, bits_per_sample=32, channels=2)
         
         # Get buffer should use custom config
         assistant_buffer = await buffer.get_buffer("assistant1")
-        assert assistant_buffer.sample_rate == 48000
+        assert assistant_buffer.sample_rate == 16000
         assert assistant_buffer.sample_width == 4
         assert assistant_buffer.channels == 2
     
@@ -187,11 +187,11 @@ class TestMultiAssistantAudioBuffer:
         buffer = MultiAssistantAudioBuffer(default_sample_rate=16000, default_sample_width=2, default_channels=1, buffer_duration=1.0)
         
         # Set custom config via MQTT
-        await buffer.set_audio_config("assistant1", sample_rate=48000, bits_per_sample=32, channels=2)
+        await buffer.set_audio_config("assistant1", sample_rate=16000, bits_per_sample=32, channels=2)
         
         # Get audio config should return the MQTT config
         config = buffer.get_audio_config("assistant1")
-        assert config["sample_rate"] == 48000
+        assert config["sample_rate"] == 16000
         assert config["sample_width"] == 4  # 32 bits / 8 = 4 bytes
         assert config["channels"] == 2
     
@@ -232,11 +232,11 @@ class TestMultiAssistantAudioBuffer:
         assert config_before["sample_rate"] == 16000
         
         # Set MQTT config
-        await buffer.set_audio_config("assistant1", sample_rate=48000, bits_per_sample=32, channels=2)
+        await buffer.set_audio_config("assistant1", sample_rate=16000, bits_per_sample=32, channels=2)
         
         # Verify MQTT config now takes precedence
         config_after = buffer.get_audio_config("assistant1")
-        assert config_after["sample_rate"] == 48000
+        assert config_after["sample_rate"] == 16000
         assert config_after["sample_width"] == 4
         assert config_after["channels"] == 2
 

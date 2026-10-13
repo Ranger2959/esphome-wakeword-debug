@@ -44,7 +44,7 @@ schema:
   post_wake_duration_seconds: float(0.5,30)
   udp_enabled: bool
   udp_assistant_id: str?
-  udp_sample_rate: int(8000,48000)
+  udp_sample_rate: int(8000,16000)
   udp_sample_width: int(1,4)
   udp_channels: int(1,8)
   mqtt_broker: str?

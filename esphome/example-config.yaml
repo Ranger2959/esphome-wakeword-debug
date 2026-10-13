@@ -9,7 +9,7 @@ esphome:
       then:
         - mqtt.publish:
             topic: assist/debug/assistant1/audio_info
-            payload: '{"sample_rate":48000,"bits_per_sample":32,"channels":1}'
+            payload: '{"sample_rate":16000,"bits_per_sample":32,"channels":1}'
             retain: true
 
 # Enable logging
@@ -52,7 +52,7 @@ microphone:
     adc_type: external
     pdm: false
     channel: left
-    sample_rate: 48000
+    sample_rate: 16000
     bits_per_sample: 32bit
     on_data:
       then:
@@ -85,7 +85,7 @@ micro_wake_word:
               # For multi-assistant support, use pattern: assist/debug/{assistant_id}/events
               # This matches the wildcard pattern: assist/debug/+/events
               topic: assist/debug/assistant1/events
-              payload: '{"event":"wake","rate":48000,"bits":32,"channels":1}'
+              payload: '{"event":"wake","rate":16000,"bits":32,"channels":1}'
 
 # Debug Audio Switch
 switch:

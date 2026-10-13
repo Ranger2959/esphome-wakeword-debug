@@ -9,7 +9,7 @@ class Settings:
     PORT: int = int(os.getenv("PORT", "8000"))
     
     # Audio settings
-    SAMPLE_RATE: int = int(os.getenv("SAMPLE_RATE", "48000"))  # Match ESPHome: 48kHz
+    SAMPLE_RATE: int = int(os.getenv("SAMPLE_RATE", "16000"))  # Match ESPHome: 48kHz
     SAMPLE_WIDTH: int = int(os.getenv("SAMPLE_WIDTH", "4"))  # 4 bytes = 32 bits
     CHANNELS: int = int(os.getenv("CHANNELS", "1"))  # Mono
     

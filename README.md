@@ -129,7 +129,7 @@ microphone:
     adc_type: external
     pdm: false
     channel: left
-    sample_rate: 48000       # Must match SAMPLE_RATE in .env
+    sample_rate: 16000       # Must match SAMPLE_RATE in .env
     bits_per_sample: 32bit   # Must match SAMPLE_WIDTH (4 bytes = 32 bits)
     on_data:
       then:
@@ -277,7 +277,7 @@ Copy `.env.example` to `.env` and customize:
 
 ```bash
 # Audio settings (must match ESPHome configuration)
-SAMPLE_RATE=48000          # Sample rate in Hz (48kHz to match example-config.yaml)
+SAMPLE_RATE=16000          # Sample rate in Hz (48kHz to match example-config.yaml)
 SAMPLE_WIDTH=4             # Bytes per sample (4=32bit to match example-config.yaml)
 CHANNELS=1                 # Number of audio channels
 
@@ -364,7 +364,7 @@ Each assistant can publish a retained message to `assist/debug/{assistant_id}/au
 
 ```json
 {
-  "sample_rate": 48000,
+  "sample_rate": 16000,
   "bits_per_sample": 32,
   "channels": 1
 }
@@ -383,7 +383,7 @@ on_boot:
     then:
       - mqtt.publish:
           topic: assist/debug/assistant1/audio_info
-          payload: '{"sample_rate":48000,"bits_per_sample":32,"channels":1}'
+          payload: '{"sample_rate":16000,"bits_per_sample":32,"channels":1}'
           retain: true
 ```
 

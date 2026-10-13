@@ -98,7 +98,7 @@ class TestMainAPI:
         mock_buffer_instance = Mock()
         mock_buffer_instance.get_clip = AsyncMock(return_value=mock_clip)
         mock_buffer_instance.get_audio_config = Mock(
-            return_value={"sample_rate": 48000, "sample_width": 4, "channels": 1}
+            return_value={"sample_rate": 16000, "sample_width": 4, "channels": 1}
         )
         mock_get_buffer.return_value = mock_buffer_instance
 
@@ -152,7 +152,7 @@ class TestMainAPI:
         mock_buffer_instance = Mock()
         mock_buffer_instance.get_clip = AsyncMock(return_value=mock_clip)
         mock_buffer_instance.get_audio_config = Mock(
-            return_value={"sample_rate": 48000, "sample_width": 4, "channels": 1}
+            return_value={"sample_rate": 16000, "sample_width": 4, "channels": 1}
         )
         mock_get_buffer.return_value = mock_buffer_instance
 
@@ -247,7 +247,7 @@ class TestMainAPI:
         mock_buffer_instance = Mock()
         mock_buffer_instance.get_clip = AsyncMock(return_value=mock_clip)
         mock_buffer_instance.get_audio_config = Mock(
-            return_value={"sample_rate": 48000, "sample_width": 4, "channels": 1}
+            return_value={"sample_rate": 16000, "sample_width": 4, "channels": 1}
         )
         mock_get_buffer.return_value = mock_buffer_instance
 
@@ -494,7 +494,7 @@ class TestClipPagination:
                 timestamp=f"2024-01-01T00:{index:02d}:00Z",
                 assistant_id="test",
                 duration=5.0,
-                sample_rate=48000,
+                sample_rate=16000,
                 label=label or clip_db.LABEL_UNKNOWN,
             )
 
@@ -575,7 +575,7 @@ class TestClipPagination:
             timestamp="2024-01-02T00:00:00Z",
             assistant_id="test",
             duration=5.0,
-            sample_rate=48000,
+            sample_rate=16000,
             label=clip_db.LABEL_POSITIVE,
         )
 
@@ -597,7 +597,7 @@ class TestClipPagination:
                 timestamp=f"2024-02-01T00:{index:02d}:00Z",
                 assistant_id="test",
                 duration=5.0,
-                sample_rate=48000,
+                sample_rate=16000,
                 label=clip_db.LABEL_POSITIVE,
             )
 
